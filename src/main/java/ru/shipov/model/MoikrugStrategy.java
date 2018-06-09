@@ -18,6 +18,7 @@ public class MoikrugStrategy implements Strategy {
     private static final String VACANCY = "[class=job]";
     private static final String VACANCY_MARKED = "[class = job marked]";
     private static final String TITLE = "[class=title]";
+    // TODO: 09.06.2018 проверить тег - location, сейчас путаница с городами.
     private static final String CITY = "[class=location]";
     private static final String COMPANY_NAME = "[class=company_name]";
     private static final String SALARY = "[class=count]";

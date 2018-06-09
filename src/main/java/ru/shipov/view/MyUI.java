@@ -2,15 +2,14 @@ package ru.shipov.view;
 
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
+import com.vaadin.data.provider.ListDataProvider;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.ui.*;
 import ru.shipov.Vacancy;
 import ru.shipov.controller.Controller;
-import ru.shipov.model.HHStrategy;
 import ru.shipov.model.Model;
-import ru.shipov.model.MoikrugStrategy;
-import ru.shipov.model.Provider;
+import ru.shipov.model.Model.Strategy;
 
 import javax.servlet.annotation.WebServlet;
 
@@ -25,21 +24,24 @@ import javax.servlet.annotation.WebServlet;
 public class MyUI extends UI {
 
     private Controller controller;
+    private Model model;
 
     @Override
     protected void init(VaadinRequest vaadinRequest) {
-        Provider hhProvider = new Provider(new HHStrategy());
-        Provider moikrugProvider = new Provider(new MoikrugStrategy());
-        Model model = new Model(hhProvider, moikrugProvider);
+        model = new Model(Strategy.ALL);
         controller = new Controller(model);
         createView();
     }
 
     private void createView() {
         setSizeFull();
-        VerticalLayout layout = new VerticalLayout();
-        layout.setSizeFull();
+        VerticalLayout mainLayout = new VerticalLayout();
+        mainLayout.setSizeFull();
+
+        // TODO: 09.06.2018 добавить приветсвие
+
         Grid<Vacancy> vacancyGrid = new Grid<>();
+        configureGrid(vacancyGrid);
 
         HorizontalLayout search = new HorizontalLayout();
         TextField textField = new TextField();
@@ -49,28 +51,62 @@ public class MyUI extends UI {
         search.addComponent(textField);
         search.addComponent(button);
 
-        vacancyGrid.addColumn(Vacancy::getTitle).setCaption("Вакансия");
-        vacancyGrid.addColumn(Vacancy::getSalary).setCaption("Зарплата");
-        vacancyGrid.addColumn(Vacancy::getCity).setCaption("Город");
-        vacancyGrid.addColumn(Vacancy::getCompanyName).setCaption("Компания");
-        vacancyGrid.addColumn(Vacancy::getSiteName).setCaption("Сайт");
-        vacancyGrid.addColumn(Vacancy::getUrl).setCaption("Ссылка");
-        vacancyGrid.setItems();
-        vacancyGrid.setWidth(70, Unit.PERCENTAGE);
-        vacancyGrid.setHeight(60, Unit.PERCENTAGE);
+        HorizontalLayout gridLayout = new HorizontalLayout();
+        gridLayout.setSizeFull();
+        RadioButtonGroup<String> radioButton = getRadioButton(vacancyGrid);
+        gridLayout.addComponent(vacancyGrid);
+        gridLayout.addComponent(radioButton);
+        gridLayout.setComponentAlignment(vacancyGrid, Alignment.TOP_RIGHT);
+        gridLayout.setComponentAlignment(radioButton, Alignment.TOP_LEFT);
+        gridLayout.setExpandRatio(vacancyGrid, 0.8f);
+        gridLayout.setExpandRatio(radioButton, 0.2f);
 
-        layout.addComponent(search);
-        layout.addComponent(vacancyGrid);
-        layout.setComponentAlignment(search, Alignment.BOTTOM_CENTER);
-        layout.setComponentAlignment(vacancyGrid, Alignment.TOP_CENTER);
-        layout.setExpandRatio(search, 0.4f);
-        layout.setExpandRatio(vacancyGrid, 0.6f);
-        layout.setMargin(true);
-        setContent(layout);
+        mainLayout.addComponent(search);
+        mainLayout.addComponent(gridLayout);
+        mainLayout.setComponentAlignment(search, Alignment.BOTTOM_CENTER);
+        mainLayout.setComponentAlignment(gridLayout, Alignment.TOP_CENTER);
+        mainLayout.setExpandRatio(search, 0.35f);
+        mainLayout.setExpandRatio(gridLayout, 0.65f);
+        mainLayout.setMargin(true);
+        setContent(mainLayout);
     }
 
     @WebServlet(urlPatterns = "/*", name = "MyUIServlet", asyncSupported = true)
     @VaadinServletConfiguration(ui = MyUI.class, productionMode = false)
     public static class MyUIServlet extends VaadinServlet {
+    }
+
+    private void configureGrid(Grid<Vacancy> vacancyGrid) {
+        vacancyGrid.addColumn(Vacancy::getTitle).setCaption("Вакансия");
+        vacancyGrid.addColumn(Vacancy::getSalary).setCaption("Зарплата");
+        vacancyGrid.addColumn(Vacancy::getCity).setCaption("Город");
+        vacancyGrid.addColumn(Vacancy::getCompanyName).setCaption("Компания");
+        // TODO: 09.06.2018 добавить кликабельную гиперссылку на вакансию
+        vacancyGrid.addColumn(Vacancy::getUrl).setCaption("Ссылка");
+        vacancyGrid.setItems();
+        vacancyGrid.setWidth(80, Unit.PERCENTAGE);
+        vacancyGrid.setHeight(70, Unit.PERCENTAGE);
+    }
+
+    private RadioButtonGroup<String> getRadioButton(Grid<Vacancy> vacancyGrid) {
+        RadioButtonGroup<String> radioButton = new RadioButtonGroup<>("Где ищем?");
+        radioButton.setItems("hh.ru", "moikrug.ru", "all");
+        radioButton.setSelectedItem("all");
+        radioButton.addValueChangeListener(event -> {
+            if (!((ListDataProvider) vacancyGrid.getDataProvider()).getItems().isEmpty()) {
+
+                String radio = radioButton.getSelectedItem().get();
+                if (radio.equals("hh.ru"))
+                    model.setStrategy(Strategy.HH);
+                if (radio.equals("moikrug.ru"))
+                    model.setStrategy(Strategy.MOIKRUG);
+                if (radio.equals("везде"))
+                    model.setStrategy(Strategy.ALL);
+
+                vacancyGrid.setItems(controller.refresh());
+                vacancyGrid.getDataProvider().refreshAll();
+            }
+        });
+        return radioButton;
     }
 }
