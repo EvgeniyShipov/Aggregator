@@ -7,9 +7,6 @@ import java.util.List;
 public class Provider {
     private Strategy strategy = new HHStrategy();
 
-    public Provider() {
-    }
-
     public List<Vacancy> getJavaVacancies(String searchString) {
         return strategy.getVacancies(searchString);
     }
@@ -21,5 +18,6 @@ public class Provider {
     public void setStrategy(Strategy strategy) {
         this.strategy = strategy;
     }
+
 
 }

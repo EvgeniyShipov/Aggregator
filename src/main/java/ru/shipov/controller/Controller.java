@@ -8,6 +8,7 @@ import java.util.List;
 public class Controller {
 
     private Model model;
+    private String city;
 
     public Controller(Model model) {
         if (model == null)
@@ -16,6 +17,11 @@ public class Controller {
     }
 
     public List<Vacancy> getVacancies(String cityName) {
+        city = cityName;
         return model.getVacancies(cityName);
+    }
+
+    public List<Vacancy> refresh() {
+       return getVacancies(city);
     }
 }

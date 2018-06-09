@@ -2,25 +2,41 @@ package ru.shipov.model;
 
 import ru.shipov.Vacancy;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Model {
 
-    private Provider[] providers;
+    private Strategy strategy;
 
-    public Model(Provider... providers) {
-        if (providers == null || providers.length == 0)
-            throw new IllegalArgumentException();
-        this.providers = providers;
+    public Model(Strategy strategy) {
+        this.strategy = strategy;
     }
 
     public List<Vacancy> getVacancies(String city) {
-        return Arrays.stream(providers)
+        return strategy.getProviders().stream()
                 .map(provider -> provider.getJavaVacancies(city))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
+    }
+
+    public void setStrategy(Strategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public enum Strategy {
+        HH(new Provider(new HHStrategy())),
+        MOIKRUG(new Provider(new MoikrugStrategy())),
+        ALL(new Provider(new HHStrategy()), new Provider(new MoikrugStrategy()));
+
+        final private Set<Provider> providers = new HashSet<>();
+
+        Strategy(Provider... provider) {
+            providers.addAll(Arrays.asList(provider));
+        }
+
+        public Set<Provider> getProviders() {
+            return providers;
+        }
     }
 }
